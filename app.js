@@ -1,7 +1,9 @@
+require('dotenv').config();
+// console.log(process.env);
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const mongooseEncryption =require("mongoose-encryption")
+const mongooseEncryption = require("mongoose-encryption")
 
 const app = express();
 
@@ -9,7 +11,6 @@ mongoose.connect("mongodb://0.0.0.0/AuthDB", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }).then(() => console.log("Connected to db"));
-
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -19,8 +20,7 @@ const userSchema = new mongoose.Schema({
     password: String
 });
 
-const secret="thisIsMySecret";
-userSchema.plugin(mongooseEncryption,{secret:secret, encryptedFields:["password"]});
+userSchema.plugin(mongooseEncryption, { secret: process.env.SECRET, encryptedFields: ["password"] });
 
 const User = mongoose.model("User", userSchema);
 
@@ -63,7 +63,7 @@ app.post("/login", (req, res) => {
             if (foundUser) {
                 if (foundUser.password === password) {
                     res.sendFile(__dirname + "/userAccount.html");
-                }else{
+                } else {
                     res.send("wrong password");
                 }
             } else {
