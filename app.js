@@ -3,7 +3,7 @@ require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-// const mongooseEncryption = require("mongoose-encryption")
+// const mongooseEncryption = require("mongoose-encryption");
 
 // const md5=require("md5");
 
