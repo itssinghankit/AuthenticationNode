@@ -12,6 +12,7 @@ const bodyParser = require("body-parser");
 
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
+const LocalStrategy = require("passport-local").Strategy
 const session = require("express-session");
 
 const app = express();
@@ -38,22 +39,50 @@ mongoose.connect("mongodb://0.0.0.0/AuthDB", {
 
 //////////////////////////////////////////////////////////// user schema and model
 
+// const userSchema = new mongoose.Schema({
+//     email: String,
+//     password: String
+// });
+
 const userSchema = new mongoose.Schema({
-    email: String,
-    password: String
+    username: String,
+    password: String,
+
 });
 
 // userSchema.plugin(mongooseEncryption, { secret: process.env.SECRET, encryptedFields: ["password"] });
-userSchema.plugin(passportLocalMongoose);
+// userSchema.plugin(passportLocalMongoose);
 
 const User = mongoose.model("User", userSchema);
 
 ////////////////////////////////////////////should be below model
 
-passport.use(User.createStrategy());
+// passport.serializeUser(User.serializeUser());
+// passport.deserializeUser(User.deserializeUser());
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+passport.use(new LocalStrategy(
+
+    function (username, password, done) {
+        console.log("username");
+        console.log(password);
+        User.findOne({ username: username }, function (err, user) {
+            if (err) { return done(err); }
+            if (!user) { return done(null, false); }
+            if (user.password!== password) { return done(null, false); }
+            return done(null, user);
+        });
+    }
+));
+
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser((id, done) => {
+    User.findById(id, (err, user) => {
+        done(err, user);
+    });
+});
 
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
@@ -67,15 +96,18 @@ app.get("/login", (req, res) => {
     res.sendFile(__dirname + "/login.html");
 });
 
-////////////////////////////////for passport using
-
 app.get("/userAccount", (req, res) => {
-    if (req.isAuthenticated()) {
-        res.sendFile(__dirname + "/userAccount.html");
-    } else {
-        res.redirect("/login");
-    }
+    // if (req.isAuthenticated()) {
+    res.sendFile(__dirname + "/userAccount.html");
+    // } else {
+    //     res.redirect("/login");
+    // }
 
+});
+
+app.get('/logout', (req, res) => {
+    req.logout();
+    res.redirect('/');
 });
 
 ////////////////////////////////////////////////////////to save user on DB
@@ -157,26 +189,41 @@ app.get("/userAccount", (req, res) => {
 
 /////////////////////////////////////////////////by using express session and passport local mongoose
 
+app.post("/login", passport.authenticate("local", {
+    successRedirect: "/userAccount",
+    failureRedirect: "/login"
+}));
+
 app.post("/register", (req, res) => {
 
-    User.register({ username: req.body.email }, req.body.password, (err, user) => {
-        if (err) {
-            console.log(err);
-            console.log("hello");
-            res.redirect("/");
-        } else {
-            console.log("meow");
-            // passport.authenticate("localStra")(req, res, () => {
-            //     console.log("ok");
-            //     res.redirect("/userAccount");
-            // });
-//             pp.post('/login/password',
-//   passport.authenticate('local', { failureRedirect: '/login', failureMessage: true }),
-//   function(req, res) {
-//     res.redirect('/~' + req.user.username);
-//   });
-        }
+    const newUser = new User({ username: req.body.email, password: req.body.password });
+
+    newUser.save().then(() => {
+        res.redirect("/userAccount");
+    }).catch((err) => {
+        console.log(err);
     })
+
+    // app.post("/register", (req, res) => {
+
+    //     User.register({ username: req.body.email }, req.body.password, (err, user) => {
+    //         if (err) {
+    //             console.log(err);
+    //             console.log("hello");
+    //             res.redirect("/");
+    //         } else {
+    //             console.log("meow");
+    //             // passport.authenticate("localStra")(req, res, () => {
+    //             //     console.log("ok");
+    //             //     res.redirect("/userAccount");
+    //             // });
+    //             //             pp.post('/login/password',
+    //             //   passport.authenticate('local', { failureRedirect: '/login', failureMessage: true }),
+    //             //   function(req, res) {
+    //             //     res.redirect('/~' + req.user.username);
+    //             //   });
+    //         }
+    //     })
 });
 
 app.listen(3000, () => {
