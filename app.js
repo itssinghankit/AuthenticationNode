@@ -78,6 +78,8 @@ passport.serializeUser((user, done) => {
     done(null, user.id);
 });
 
+//noww we have to setup this passport commit
+
 passport.deserializeUser((id, done) => {
     User.findById(id, (err, user) => {
         done(err, user);
