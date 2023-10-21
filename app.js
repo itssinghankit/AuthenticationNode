@@ -11,7 +11,7 @@ const bodyParser = require("body-parser");
 // const saltRounds = 10;
 
 const passport = require("passport");
-const passportLocalMongoose = require("passport-local-mongoose");
+// const passportLocalMongoose = require("passport-local-mongoose");
 const LocalStrategy = require("passport-local").Strategy
 const session = require("express-session");
 
@@ -63,12 +63,11 @@ const User = mongoose.model("User", userSchema);
 passport.use(new LocalStrategy(
 
     function (username, password, done) {
-        console.log("username");
-        console.log(password);
+        console.log(username, password);
         User.findOne({ username: username }, function (err, user) {
             if (err) { return done(err); }
-            if (!user) { return done(null, false); }
-            if (user.password!== password) { return done(null, false); }
+            if (!user) { return done(null, false, { message: "incorrect usename" }); }
+            if (!user.password == password) { return done(null, false, { message: "incorrect password" }); }
             return done(null, user);
         });
     }
@@ -191,10 +190,18 @@ app.get('/logout', (req, res) => {
 
 /////////////////////////////////////////////////by using express session and passport local mongoose
 
-app.post("/login", passport.authenticate("local", {
-    successRedirect: "/userAccount",
-    failureRedirect: "/login"
-}));
+// app.post("/login", passport.authenticate('local'), function (res, req) {
+//     // successRedirect: "/userAccount",
+//     // failureRedirect: "/userAccount"
+//     console.log("hello");
+//     res.redirect("/userAccount");
+// });
+
+app.post('/login',
+    passport.authenticate('local', { failureRedirect: '/' }),
+    function (req, res) {
+        res.redirect('/userAccount');
+    });
 
 app.post("/register", (req, res) => {
 
